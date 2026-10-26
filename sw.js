@@ -1,5 +1,5 @@
 // Network first so updates arrive right away; cached copy keeps the app working offline.
-const CACHE = 'tenge-v1';
+const CACHE = 'tenge-v2';
 const FILES = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

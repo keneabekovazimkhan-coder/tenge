@@ -4,6 +4,8 @@
 const KEY = 'tenge-v1';
 const PALETTE = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16', '#06B6D4', '#94A3B8'];
 
+const AUTO_CAT = { id: 'auto', name: 'Авто', icon: 'fuel', color: '#0EA5E9' };
+
 const defaults = () => ({
   tx: [],
   cats: {
@@ -12,6 +14,7 @@ const defaults = () => ({
       { id: 'cafe', name: 'Кафе', icon: 'coffee', color: '#F59E0B' },
       { id: 'transport', name: 'Транспорт', icon: 'bus', color: '#3B82F6' },
       { id: 'taxi', name: 'Такси', icon: 'car', color: '#EAB308' },
+      { ...AUTO_CAT },
       { id: 'shop', name: 'Покупки', icon: 'bag', color: '#EC4899' },
       { id: 'home', name: 'Дом', icon: 'home', color: '#8B5CF6' },
       { id: 'phone', name: 'Связь', icon: 'phone', color: '#06B6D4' },
@@ -38,7 +41,14 @@ const defaults = () => ({
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && Array.isArray(s.tx)) return s;
+    if (s && Array.isArray(s.tx)) {
+      // v1 data predates the Авто category
+      if (!s.cats.expense.some((c) => c.id === 'auto')) {
+        const i = s.cats.expense.findIndex((c) => c.id === 'other');
+        s.cats.expense.splice(i < 0 ? s.cats.expense.length : i, 0, { ...AUTO_CAT });
+      }
+      return s;
+    }
   } catch (e) { /* first run or storage blocked */ }
   return defaults();
 }
@@ -79,6 +89,8 @@ const ICONS = {
   calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   note: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  fuel: '<path d="M3 22h12M4 9h10"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
 };
 const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.tag}</svg>`;
 
@@ -320,6 +332,7 @@ function openSheet(html, { full = false } = {}) {
   document.body.style.overflow = 'hidden';
 }
 function removeSheet() {
+  if (listener) { listener.abort(); listener = null; }
   const s = $('#sheet');
   if (s) s.remove();
   document.body.style.overflow = '';
@@ -361,7 +374,7 @@ function renderAdd() {
         <button class="${d.type === 'expense' ? 'on e' : ''}" data-type="expense">Расход</button>
         <button class="${d.type === 'income' ? 'on i' : ''}" data-type="income">Доход</button>
       </div>
-      ${d.id ? `<button class="icon-btn" data-act="delete" aria-label="Удалить" style="color:var(--danger)">${icon('trash')}</button>` : '<span style="width:44px"></span>'}
+      ${d.id ? `<button class="icon-btn" data-act="delete" aria-label="Удалить" style="color:var(--danger)">${icon('trash')}</button>` : `<button class="icon-btn voice-btn" data-act="voice" aria-label="Сказать голосом">${icon('mic')}</button>`}
     </div>
     <div class="amount num ${amt ? '' : 'zero'}" id="amt" style="color:${amt ? (d.type === 'income' ? 'var(--income)' : 'var(--text)') : ''}">${money(amt)}</div>
     <div class="meta">
@@ -373,7 +386,6 @@ function renderAdd() {
       ${cats.map((c) => `<button class="cat ${d.cat === c.id ? 'on' : ''}" data-cat="${c.id}">${badge(c)}<span>${esc(c.name)}</span></button>`).join('')}
       <button class="cat" data-act="new-cat">${badge({ icon: 'plus', color: '#64748B' })}<span>Своя</span></button>
     </div>
-    ${d.id ? '' : '<p class="hint">Введи сумму и нажми категорию — запись сохранится сразу</p>'}
     <div class="pad">
       ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0'].map((k) => `<button class="num" data-key="${k}">${k}</button>`).join('')}
       <button data-key="del" aria-label="Стереть">${icon('del')}</button>
@@ -415,6 +427,159 @@ function commit() {
   render();
   if (navigator.vibrate) navigator.vibrate(10);
   toast(`${signed(rec)} · ${catOf(rec.type, rec.cat).name}`, d.id ? null : () => { S.tx = S.tx.filter((t) => t.id !== rec.id); save(); render(); });
+}
+
+// ---------- voice ----------
+// Phrases like «1500 тенге сегодня потратил на бензин» are parsed on the device, no network needed.
+const NUM_WORDS = {
+  один: 1, одна: 1, одну: 1, два: 2, две: 2, три: 3, четыре: 4, пять: 5, шесть: 6, семь: 7, восемь: 8, девять: 9, десять: 10,
+  одиннадцать: 11, двенадцать: 12, тринадцать: 13, четырнадцать: 14, пятнадцать: 15, шестнадцать: 16, семнадцать: 17,
+  восемнадцать: 18, девятнадцать: 19, двадцать: 20, тридцать: 30, сорок: 40, пятьдесят: 50, шестьдесят: 60, семьдесят: 70,
+  восемьдесят: 80, девяносто: 90, сто: 100, двести: 200, триста: 300, четыреста: 400, пятьсот: 500, шестьсот: 600,
+  семьсот: 700, восемьсот: 800, девятьсот: 900,
+};
+
+const KEYWORDS = {
+  expense: [
+    ['auto', /бензин|заправ|топлив|солярк|мойк|парковк|штраф|шиномонтаж|автосервис|машин/],
+    ['taxi', /такси|яндекс\s?го|uber|убер|indrive|индрайв/],
+    ['transport', /автобус|метро|проезд|транспорт|онай|электричк|поезд|самол|авиа|билет/],
+    ['cafe', /кафе|коф|ресторан|обед|ужин|завтрак|бургер|пицц|шаурм|суши|столов|макдон/],
+    ['food', /продукт|магазин|супермаркет|магнум|смолл|хлеб|молок|мяс|овощ|фрукт|(?<![а-я])ед[ау](?![а-я])|рынок|базар/],
+    ['shop', /одежд|обув|кроссов|куртк|футболк|вайлдб|wildberries|ozon|озон|техник|косметик/],
+    ['phone', /связ|телефон|мобильн|интернет|баланс/],
+    ['home', /квартир|аренд|коммунал|(?<![а-я])свет|электричеств|ремонт|мебел|посуд/],
+    ['health', /аптек|лекарств|таблет|врач|больниц|клиник|стоматолог|зуб|анализ/],
+    ['fun', /кино|развлеч|(?<![а-я])бар(?![а-я])|клуб|игр|концерт|отдых|спортзал|фитнес|бассейн|подписк/],
+    ['gift', /подар|цвет/],
+  ],
+  income: [
+    ['salary', /зарплат|(?<![а-я])зп(?![а-я])|аванс|оклад|преми/],
+    ['side', /подработ|фриланс|заказ|халтур/],
+    ['gift_in', /подарил|подарок|подарк/],
+  ],
+};
+const INCOME_RE = /зарплат|(?<![а-я])зп(?![а-я])|аванс|оклад|преми|получил|заработ|пришл|пришел|поступ|доход|подработ|фриланс|кешб|кэшб|вернули|мне перевел|перевели мне|подарили/;
+
+function parseAmount(t) {
+  // «450 тысяч», «2,5 тыс», «450к» (к only when glued to the number, so «1500 к ужину» stays 1500)
+  const m = t.match(/(\d[\d\s ]*\d|\d)(?:[.,](\d+))?(?:\s*(тыс\S*|млн\S*|миллион\S*)|(к)(?![а-яa-z]))?/);
+  if (m) {
+    const n = parseFloat(m[1].replace(/[\s ]/g, '') + (m[2] ? '.' + m[2] : ''));
+    const unit = m[3] || m[4];
+    const mult = unit ? (unit.startsWith('м') ? 1e6 : 1000) : 1;
+    return { amount: Math.round(n * mult), used: [m[0]] };
+  }
+  // spelled out: «полторы тысячи», «две тысячи пятьсот», «тысячу»
+  let total = 0, cur = 0, started = false;
+  const used = [];
+  for (const w of t.split(/\s+/)) {
+    if (w in NUM_WORDS) cur += NUM_WORDS[w];
+    else if (/^полтор/.test(w)) cur += 1.5;
+    else if (/^тысяч/.test(w)) { total += (cur || 1) * 1000; cur = 0; }
+    else if (started) break;
+    else continue;
+    started = true;
+    used.push(w);
+  }
+  const amount = Math.round(total + cur);
+  return amount ? { amount, used } : null;
+}
+
+function parseSpeech(raw) {
+  const t = raw.toLowerCase().replace(/ё/g, 'е').trim();
+  const a = parseAmount(t);
+  if (!a) return null;
+  const type = INCOME_RE.test(t) ? 'income' : 'expense';
+
+  let cat = (KEYWORDS[type].find(([, re]) => re.test(t)) || [])[0];
+  if (!cat) {
+    // user-made categories: match by the start of their name
+    const own = S.cats[type].find((c) => c.name.length > 2 && t.includes(c.name.toLowerCase().slice(0, Math.max(3, c.name.length - 2))));
+    cat = own ? own.id : (S.cats[type].find((c) => /^other/.test(c.id)) || S.cats[type].at(-1)).id;
+  }
+
+  const sec = S.sections.find((s) => t.includes(s.name.toLowerCase().replace(/ё/g, 'е').slice(0, Math.max(4, s.name.length - 3))));
+  const back = /позавчера/.test(t) ? 2 : /вчера/.test(t) ? 1 : 0;
+  const d = new Date();
+  const ts = back ? new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, 12).getTime() : d.getTime();
+
+  let note = t;
+  for (const u of a.used) note = note.replace(u, ' ');
+  note = note
+    .replace(/тенге|(?<![а-я])тг(?![а-я])|₸/g, ' ')
+    .replace(/позавчера|вчера|сегодня/g, ' ')
+    .replace(/(?<![а-я])(я\s+)?(потратил|заплатил|отдал|купил|получил|заработал|пришел|пришл)[аио]?(?![а-я])/g, ' ')
+    .replace(/\s+/g, ' ').trim()
+    .replace(/^(на|за|в|во)\s+/, '')
+    .slice(0, 80);
+  note = note.charAt(0).toUpperCase() + note.slice(1);
+
+  return { type, amount: a.amount, cat, section: sec ? sec.id : S.activeSection, ts, note };
+}
+
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let listener = null;
+
+function openVoice() {
+  draft = null;
+  openSheet(`<h3>Скажи, что записать</h3>
+    <p class="voice-hint">Например: «1500 на бензин», «вчера такси 2000», «зарплата 450 тысяч»</p>
+    <form class="voice-row" data-form="voice">
+      <input class="field" id="voice-text" autocomplete="off" placeholder="Говори или пиши…" enterkeyhint="done" aria-label="Фраза">
+      <button type="button" class="mic-btn" data-act="mic" aria-label="Слушать">${icon('mic')}</button>
+    </form>
+    <p class="voice-status" id="voice-status" role="status"></p>
+    <button class="save" data-act="voice-save">Записать</button>`);
+  listen();
+}
+
+function voiceStatus(text) { const el = $('#voice-status'); if (el) el.textContent = text; }
+function keyboardFallback() {
+  voiceStatus('Нажми на поле выше, потом на микрофон на клавиатуре iPhone и продиктуй. Затем «Записать».');
+}
+
+function listen() {
+  if (!SpeechRec) return keyboardFallback();
+  let finalText = '';
+  try {
+    listener = new SpeechRec();
+    listener.lang = 'ru-RU';
+    listener.interimResults = true;
+    listener.onresult = (e) => {
+      const text = [...e.results].map((r) => r[0].transcript).join('');
+      const input = $('#voice-text');
+      if (input) input.value = text;
+      if (e.results[e.results.length - 1].isFinal) finalText = text;
+    };
+    listener.onerror = (e) => {
+      if (e.error === 'no-speech') voiceStatus('Ничего не услышал. Нажми микрофон и скажи ещё раз.');
+      else if (e.error !== 'aborted') keyboardFallback();
+    };
+    listener.onend = () => {
+      listener = null;
+      $('.mic-btn')?.classList.remove('on');
+      if (finalText.trim() && $('#voice-text')) voiceCommit(finalText);
+    };
+    listener.start();
+    $('.mic-btn')?.classList.add('on');
+    voiceStatus('Слушаю…');
+  } catch (e) {
+    listener = null;
+    keyboardFallback();
+  }
+}
+
+function voiceCommit(text) {
+  const p = parseSpeech(text || '');
+  if (!p) { voiceStatus('Не понял сумму. Скажи, например: «1500 на бензин».'); return; }
+  const rec = { id: uid(), ...p };
+  S.tx.push(rec);
+  save();
+  closeSheet();
+  render();
+  const where = p.section !== S.activeSection ? ` · ${secOf(p.section).name}` : '';
+  toast(`${signed(rec)} · ${catOf(rec.type, rec.cat).name}${where}`, () => { S.tx = S.tx.filter((t) => t.id !== rec.id); save(); render(); });
 }
 
 // ---------- toast ----------
@@ -507,6 +672,9 @@ document.addEventListener('click', (e) => {
 
   switch (ds.act) {
     case 'add': return openAdd();
+    case 'voice': return openVoice();
+    case 'mic': return listener ? listener.stop() : listen();
+    case 'voice-save': return voiceCommit($('#voice-text').value);
     case 'close': return closeSheet();
     case 'save': return commit();
     case 'prev-month': month = new Date(month.getFullYear(), month.getMonth() - 1, 1); return render();
@@ -591,6 +759,12 @@ document.addEventListener('change', (e) => {
       S = data; save(); closeSheet(); go('home'); toast('Данные восстановлены');
     }).catch(() => toast('Это не файл резервной копии'));
   }
+});
+
+document.addEventListener('submit', (e) => {
+  if (e.target.dataset.form !== 'voice') return;
+  e.preventDefault();
+  voiceCommit($('#voice-text').value);
 });
 
 document.addEventListener('keydown', (e) => {

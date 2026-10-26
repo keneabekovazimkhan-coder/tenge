@@ -162,27 +162,27 @@ h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .seg button { min-height: 38px; border-radius: 11px; font-size: 15px; font-weight: 600; color: var(--muted); }
 .seg button.on.e { background: rgba(248, 113, 113, 0.18); color: var(--expense); }
 .seg button.on.i { background: rgba(52, 211, 153, 0.18); color: var(--income); }
-.amount { text-align: center; font-size: 46px; font-weight: 700; margin: 14px 0 6px; line-height: 1.15; min-height: 54px; }
+.amount { text-align: center; font-size: 46px; font-weight: 700; margin: 6px 0 4px; line-height: 1.15; min-height: 54px; }
 .amount.zero { color: var(--dim); }
 .amount.shake { animation: shake 0.3s; }
 @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .meta { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
 .meta .pill { min-height: 36px; font-size: 14px; position: relative; }
 .meta input[type=date] { position: absolute; inset: 0; opacity: 0; width: 100%; }
-.note { width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); padding: 0 14px; font-size: 16px; margin-bottom: 12px; }
+.note { width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); padding: 0 14px; font-size: 16px; margin-bottom: 10px; }
 .note::placeholder { color: var(--dim); }
-.cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
 .cat {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-  min-height: 74px; padding: 8px 2px; border-radius: 16px;
+  min-height: 66px; padding: 6px 2px; border-radius: 16px;
   background: var(--card); border: 1px solid var(--border); font-size: 12px; color: #CBD5E1;
 }
 .cat .badge { width: 34px; height: 34px; }
 .cat.on { border-color: var(--primary); background: rgba(59, 130, 246, 0.16); }
 .cat:active { transform: scale(0.96); }
 .cat span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
-.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: auto; }
-.pad button { min-height: 54px; border-radius: 16px; background: var(--card); font-size: 24px; font-weight: 500; display: grid; place-items: center; }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: auto; }
+.pad button { min-height: 50px; border-radius: 16px; background: var(--card); font-size: 24px; font-weight: 500; display: grid; place-items: center; }
 .pad button:active { background: var(--card-hi); }
 .save {
   width: 100%; min-height: 54px; border-radius: 16px; margin-top: 10px;
@@ -190,6 +190,17 @@ h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 }
 .save:disabled { opacity: 0.35; }
 .hint { text-align: center; color: var(--dim); font-size: 13px; margin: -4px 0 10px; }
+
+/* voice */
+.voice-btn { background: rgba(59, 130, 246, 0.2); color: #BFDBFE; border-radius: 50%; }
+.voice-hint { color: var(--muted); font-size: 14px; margin: -4px 4px 14px; }
+.voice-row { display: flex; gap: 10px; align-items: center; }
+.voice-row .field { margin: 0; flex: 1; min-width: 0; }
+.mic-btn { width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--primary); color: #fff; }
+.mic-btn.on { background: var(--danger); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+@media (prefers-reduced-motion: reduce) { .mic-btn.on { animation: none; } }
+.voice-status { color: var(--muted); font-size: 14px; min-height: 20px; margin: 10px 4px 0; }
 
 /* forms in sheets */
 .field { width: 100%; min-height: 48px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); padding: 0 14px; font-size: 16px; margin-bottom: 12px; }
